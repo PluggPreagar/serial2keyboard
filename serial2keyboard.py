@@ -4,6 +4,10 @@ import serial
 from pynput.keyboard import Key, Controller
 import sys
 import glob
+import win32gui
+import win32con
+import win32api
+
 
 def list_ports():
 	""" Finds all serial ports and returns a list containing them
@@ -34,17 +38,35 @@ def list_ports():
 	return result 
 
 
-if(len(sys.argv)<2):
+def winEnumHandler( hwnd, ctx ):
+    if win32gui.IsWindowVisible( hwnd ):
+        print (hex(hwnd), "'",win32gui.GetWindowText( hwnd ),"'")
+
+if(len(sys.argv)>3):
+	winName=sys.argv[3]  # "test.txt - Editor"
+	hwndMain = win32gui.FindWindow(None, winName) 
+	if 0 == hwndMain :
+		hwndMain = win32gui.FindWindow(None, "*" + winName)  
+	if 0 != hwndMain :
+		win32gui.SetForegroundWindow(hwndMain)  # show that i found it ... 
+	print ("searched for win \""+winName+"\"")
+
+if (len(sys.argv)<2  or  ( len(sys.argv)>3 and 0 == hwndMain) ) :
 	print("usage:")
-	print("To run the python script: 'python3 serial2keyboard.py [Port] [Optional: baud rate]', eg: 'python3 serial2keyboard.py /dev/ttyUSB0', or 'python3 serial2keyboard.py /dev/ttyUSB0 9600'")
+	print("To run the python script: 'python3 serial2keyboard.py <Port> [baud rate [WindowName]] ', eg: 'python3 serial2keyboard.py /dev/ttyUSB0', or 'python3 serial2keyboard.py /dev/ttyUSB0 9600'")
 	print("To run the native executable made with pyinstaller: './serial2keyboard(probably add .exe on windows) [Port] [optional: baudrate]'")
+	print("eg.: python serial2keyboard.py 11 9600 \"test.txt - Editor\"")
 	print("Default baud rate if not supplied as second argument: 9600")
 	print("Suspected suitable serial ports are:", list_ports())
+	if  len(sys.argv)>3  :
+		print("Suspected suitable windows:")
+		win32gui.EnumWindows( winEnumHandler, None )
 	sys.exit(1)
+
 
 print("Attempting to open serial port: ", sys.argv[1])
 baudRate=9600
-if(len(sys.argv)==3):
+if(len(sys.argv)>2):
 	baudRate=int(sys.argv[2])
 print("Setting baud rate to",baudRate)
 
@@ -62,6 +84,8 @@ try:
 	while(s.is_open):
 
 		if(s.in_waiting>0):
+			if 0 != hwndMain :
+				win32gui.SetForegroundWindow(hwndMain)
 			rxLine=s.readline().decode("ascii").strip()
 			keyboard.type(rxLine)
 			keyboard.press(Key.enter)
