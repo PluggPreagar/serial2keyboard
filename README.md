@@ -1,4 +1,10 @@
 # serial2keyboard
+--- added
+
+added param to select target window
+
+
+-----
 Python script that listens to serial data and pushes virtual keyboard keys. Baudrate defaults to 9600, but is changeable with the optional second command line agument. 
 
 This works really well with Arduino's 
